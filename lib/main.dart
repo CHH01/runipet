@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'screens/login_screen.dart';
+import 'screens/signup_screen.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(SignUpApp());
 }
 
-class MyApp extends StatelessWidget {
+class SignUpApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FitJourney',
-      home: LoginScreen(), // 앱 실행 시 LoginScreen 표시
+      title: '회원가입',
+      debugShowCheckedModeBanner: false,
+      home: SignUpScreen(),
     );
   }
 }
