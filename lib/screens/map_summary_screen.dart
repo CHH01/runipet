@@ -7,19 +7,20 @@ class MapSummaryScreen extends StatelessWidget {
   final Duration totalTime;
 
   const MapSummaryScreen({
-    Key? key,
+    super.key,
     required this.path,
     required this.totalDistance,
     required this.totalTime,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    double kcal = (totalDistance / 1000) * 55; // 간단한 칼로리 계산
+    double kcal = (totalDistance / 1000) * 55;
+    double expGained = 1.2; // 경험치 획득률은 임시 값
+    double currentExp = 0.225; // 현재 경험치 (22.5%)
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('운동 기록 요약'),
-      ),
+      appBar: AppBar(title: Text('운동 기록 요약')),
       body: Column(
         children: [
           Expanded(
@@ -31,22 +32,44 @@ class MapSummaryScreen extends StatelessWidget {
               polylines: {
                 Polyline(
                   polylineId: PolylineId('summary_route'),
-                  color: Colors.blue,
+                  color: Colors.red,
                   width: 5,
                   points: path,
                 ),
               },
+              myLocationEnabled: false,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
             ),
           ),
-          Padding(
-            padding: EdgeInsets.all(20),
+          Container(
+            width: double.infinity,
+            color: Color(0xFFFFF3E0),
+            padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('총 거리: ${(totalDistance/1000).toStringAsFixed(2)} km'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _summaryItem('뛴 거리', '${(totalDistance / 1000).toStringAsFixed(1)}km'),
+                    _summaryItem('뛴 시간', '${totalTime.inMinutes}m'),
+                    _summaryItem('소모한 칼로리', '${kcal.toStringAsFixed(0)}kcal'),
+                  ],
+                ),
+                SizedBox(height: 20),
+                Text('경험치 ${expGained.toStringAsFixed(1)}% 획득',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 SizedBox(height: 10),
-                Text('총 시간: ${_formatDuration(totalTime)}'),
+                LinearProgressIndicator(
+                  value: currentExp,
+                  minHeight: 14,
+                  backgroundColor: Colors.grey[300],
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                ),
                 SizedBox(height: 10),
-                Text('칼로리 소모: ${kcal.toStringAsFixed(0)} kcal'),
+                Text('${(currentExp * 100).toStringAsFixed(1)}%',
+                    style: TextStyle(fontSize: 14)),
               ],
             ),
           ),
@@ -55,10 +78,15 @@ class MapSummaryScreen extends StatelessWidget {
     );
   }
 
-  String _formatDuration(Duration d) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String minutes = twoDigits(d.inMinutes.remainder(60));
-    String seconds = twoDigits(d.inSeconds.remainder(60));
-    return "${d.inHours}:$minutes:$seconds";
+  Widget _summaryItem(String label, String value) {
+    return Column(
+      children: [
+        Text(label,
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        SizedBox(height: 6),
+        Text(value, style: TextStyle(fontSize: 16)),
+      ],
+    );
   }
+
 }
