@@ -1,0 +1,102 @@
+import 'package:flutter/material.dart';
+import 'pet_home_screen.dart'; // 펫 관리화면 import
+
+class PetSelectScreen extends StatefulWidget {
+  const PetSelectScreen({super.key});
+
+  @override
+  State<PetSelectScreen> createState() => _PetSelectScreenState();
+}
+
+class _PetSelectScreenState extends State<PetSelectScreen> {
+  String selectedType = 'dog'; // 기본 선택값
+  final TextEditingController nameController = TextEditingController();
+
+  void _goToPetHome() {
+    final name = nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('펫 이름을 입력해주세요.')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PetHomeScreen(
+          petName: name,
+          petType: selectedType,
+        ),
+      ),
+    );
+  }
+
+  Widget _animalButton(String type, String label, String assetPath) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedType = type;
+        });
+      },
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: selectedType == type ? Colors.orange : Colors.transparent, width: 3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Image.asset(assetPath, width: 100, height: 100),
+          ),
+          SizedBox(height: 6),
+          Text(label),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('가상동물 선택')),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text('펫 이름을 지어주세요:', style: TextStyle(fontSize: 18)),
+            SizedBox(height: 8),
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                hintText: '예: 누룽이',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            Text('펫 종류를 선택하세요:', style: TextStyle(fontSize: 18)),
+            SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _animalButton('dog', '강아지', 'assets/images/selector/dog.png'),
+                _animalButton('cat', '고양이', 'assets/images/selector/cat.png'),
+                _animalButton('rabbit', '토끼', 'assets/images/selector/rabbit.png'),
+              ],
+            ),
+            Spacer(),
+            ElevatedButton(
+              onPressed: _goToPetHome,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+              child: Text('펫 선택 완료', style: TextStyle(fontSize: 18, color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

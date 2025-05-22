@@ -21,3 +21,18 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/images/pet/dog/stage_1_egg/
+    - assets/images/pet/dog/stage_2_hatch/
+    - assets/images/pet/dog/stage_3_child/
+    - assets/images/pet/dog/stage_4_adult/
+    - assets/images/pet/dog/stage_5_elder/
+    - assets/images/pet/cat/stage_1_egg/
+    - assets/images/pet/cat/stage_2_hatch/
+    - assets/images/pet/cat/stage_3_child/
+    - assets/images/pet/cat/stage_4_adult/
+    - assets/images/pet/cat/stage_5_elder/
+    - assets/images/pet/rabbit/stage_1_egg/
+    - assets/images/pet/rabbit/stage_2_hatch/
+    - assets/images/pet/rabbit/stage_3_child/
+    - assets/images/pet/rabbit/stage_4_adult/
+    - assets/images/pet/rabbit/stage_5_elder/
