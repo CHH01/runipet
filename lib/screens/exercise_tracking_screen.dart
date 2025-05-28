@@ -2,21 +2,22 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'map_summary_screen.dart';
+import 'exercise_summary_screen.dart';
 
-class MapTrackingScreen extends StatefulWidget {
-  const MapTrackingScreen({super.key});
+class ExerciseTrackingScreen extends StatefulWidget {
+  const ExerciseTrackingScreen({super.key});
 
   @override
-  State<MapTrackingScreen> createState() => _MapTrackingScreenState();
+  State<ExerciseTrackingScreen> createState() => _ExerciseTrackingScreenState();
 }
 
-class _MapTrackingScreenState extends State<MapTrackingScreen> {
+class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
   final Completer<GoogleMapController> _controller = Completer();
   GoogleMapController? _mapController;
   final List<LatLng> _polylineCoordinates = [];
   final Set<Marker> _markers = {};
-  final Map<String, String> _visitedMarkers = {}; // ✅ 하루 1회 방문 체크용
+  final Map<String, String> _visitedMarkers = {};
+  int _totalXp = 0;
 
   bool _isPaused = false;
   StreamSubscription<Position>? _positionStream;
@@ -35,9 +36,9 @@ class _MapTrackingScreenState extends State<MapTrackingScreen> {
   void _setMarkers() {
     _markers.add(
       Marker(
-        markerId: MarkerId('cheonan_stadium'),
-        position: LatLng(36.819124, 127.116824),
-        infoWindow: InfoWindow(title: '천안종합운동장'),
+        markerId: MarkerId('sunmoon_gate'),
+        position: LatLng(36.802935, 127.069930),
+        infoWindow: InfoWindow(title: '선문대 서문'),
       ),
     );
   }
@@ -121,13 +122,18 @@ class _MapTrackingScreenState extends State<MapTrackingScreen> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                   textAlign: TextAlign.center),
               SizedBox(height: 12),
-              Text('+500xp    +사료 2개 획득',
+              Text('+500xp 획득',
                   style: TextStyle(fontSize: 16, color: Colors.white),
                   textAlign: TextAlign.center),
               SizedBox(height: 12),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () {
+                  setState(() {
+                    _totalXp += 500;
+                  });
+                  Navigator.of(context).pop();
+                },
                 child: Text('확인', style: TextStyle(color: Colors.orange)),
               ),
             ],
@@ -178,13 +184,20 @@ class _MapTrackingScreenState extends State<MapTrackingScreen> {
   void _stopTracking() {
     _positionStream?.cancel();
     _stopwatch.stop();
+
+    double totalKm = _totalDistance / 1000;
+    int earnedXp = (totalKm * 500).toInt() + _totalXp;
+    int earnedCoins = (_totalDistance / 100 * 50).toInt();
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MapSummaryScreen(
+        builder: (context) => ExerciseSummaryScreen(
           path: _polylineCoordinates,
           totalDistance: _totalDistance,
           totalTime: _stopwatch.elapsed,
+          xpEarned: earnedXp,
+          coinsEarned: earnedCoins,
         ),
       ),
     );

@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   google_maps_flutter: ^2.5.0
   geolocator: ^10.1.0
+  flutter_local_notifications: ^19.2.1
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
@@ -21,6 +23,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/images/icons/
+    - assets/images/items/
     - assets/images/pet/dog/stage_1_egg/
     - assets/images/pet/dog/stage_2_hatch/
     - assets/images/pet/dog/stage_3_child/

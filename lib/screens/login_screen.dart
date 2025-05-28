@@ -145,8 +145,8 @@ class _LoginScreenState extends State<LoginScreen> {
     String inputPassword = _passwordController.text.trim();
 
     if (inputId == _correctId && inputPassword == _correctPassword) {
-      // 로그인 성공
-      Navigator.pushReplacementNamed(context, '/start_exercise');
+      // 로그인 성공 시 펫 선택 화면으로 이동
+      Navigator.pushReplacementNamed(context, '/pet_select');
     } else {
       // 로그인 실패 → 에러 팝업
       showDialog(

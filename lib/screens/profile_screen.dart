@@ -76,11 +76,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () {},
-                child: Text('프로필 이미지 변경'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   shape: StadiumBorder(),
                 ),
+                child: Text('프로필 이미지 변경'),
               ),
               SizedBox(height: 20),
               Row(
@@ -155,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Column(
                       children: [
                         Text('시간', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text('${recentTime}분', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('$recentTime분', style: TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                     Column(

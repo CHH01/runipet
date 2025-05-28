@@ -57,7 +57,6 @@ class _SelectPetScreenState extends State<SelectPetScreen> {
                   onPressed: selectedPet != null
                       ? () {
                           // 다음 화면 이동 또는 상태 저장
-                          print('선택된 동물: $selectedPet');
                           Navigator.pushNamed(context, '/start_exercise');
                         }
                       : null,

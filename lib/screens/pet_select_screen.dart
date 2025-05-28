@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'pet_home_screen.dart'; // 펫 관리화면 import
+import 'main_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PetSelectScreen extends StatefulWidget {
   const PetSelectScreen({super.key});
@@ -12,7 +13,7 @@ class _PetSelectScreenState extends State<PetSelectScreen> {
   String selectedType = 'dog'; // 기본 선택값
   final TextEditingController nameController = TextEditingController();
 
-  void _goToPetHome() {
+  void _goToPetHome() async {
     final name = nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -21,10 +22,17 @@ class _PetSelectScreenState extends State<PetSelectScreen> {
       return;
     }
 
-    Navigator.push(
+    // 펫 상태 초기화
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastSatiety', 100);
+    await prefs.setInt('lastHappiness', 100);
+    await prefs.setInt('lastUpdate', DateTime.now().millisecondsSinceEpoch);
+
+    // 펫 정보를 저장하고 메인 화면으로 이동
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => PetHomeScreen(
+        builder: (context) => MainScreen(
           petName: name,
           petType: selectedType,
         ),
@@ -79,9 +87,9 @@ class _PetSelectScreenState extends State<PetSelectScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _animalButton('dog', '강아지', 'assets/images/selector/dog.png'),
-                _animalButton('cat', '고양이', 'assets/images/selector/cat.png'),
-                _animalButton('rabbit', '토끼', 'assets/images/selector/rabbit.png'),
+                _animalButton('dog', '강아지', 'assets/images/pet/dog/stage_3_child/normal.png'),
+                _animalButton('cat', '고양이', 'assets/images/pet/cat/stage_3_child/normal.png'),
+                _animalButton('rabbit', '토끼', 'assets/images/pet/rabbit/stage_3_child/normal.png'),
               ],
             ),
             Spacer(),
