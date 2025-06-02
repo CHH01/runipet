@@ -17,7 +17,7 @@ class PetProvider with ChangeNotifier {
 
     try {
       // TODO: API 호출로 변경
-      await Future.delayed(const Duration(seconds: 1)); // 임시 딜레이
+      await Future.delayed(const Duration(seconds: 1));
       _petData = PetData(
         id: '1',
         name: '멍멍이',
@@ -37,55 +37,24 @@ class PetProvider with ChangeNotifier {
     }
   }
 
-  Future<void> feedPet() async {
+  // 아이템 사용 시 상태 업데이트
+  Future<void> updatePetStatus({
+    int? satiety,
+    int? happiness,
+    int? health,
+    int? exp,
+  }) async {
     if (_petData == null) return;
 
     try {
       // TODO: API 호출로 변경
-      await Future.delayed(const Duration(milliseconds: 500)); // 임시 딜레이
+      await Future.delayed(const Duration(milliseconds: 500));
       
       _petData = _petData!.copyWith(
-        satiety: (_petData!.satiety + 20).clamp(0, 100),
-        happiness: (_petData!.happiness + 10).clamp(0, 100),
-      );
-      
-      notifyListeners();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      rethrow;
-    }
-  }
-
-  Future<void> playWithPet() async {
-    if (_petData == null) return;
-
-    try {
-      // TODO: API 호출로 변경
-      await Future.delayed(const Duration(milliseconds: 500)); // 임시 딜레이
-      
-      _petData = _petData!.copyWith(
-        happiness: (_petData!.happiness + 30).clamp(0, 100),
-        satiety: (_petData!.satiety - 10).clamp(0, 100),
-      );
-      
-      notifyListeners();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      rethrow;
-    }
-  }
-
-  Future<void> healPet() async {
-    if (_petData == null) return;
-
-    try {
-      // TODO: API 호출로 변경
-      await Future.delayed(const Duration(milliseconds: 500)); // 임시 딜레이
-      
-      _petData = _petData!.copyWith(
-        health: 100,
+        satiety: satiety != null ? (_petData!.satiety + satiety).clamp(0, 100) : _petData!.satiety,
+        happiness: happiness != null ? (_petData!.happiness + happiness).clamp(0, 100) : _petData!.happiness,
+        health: health != null ? (_petData!.health + health).clamp(0, 100) : _petData!.health,
+        exp: exp != null ? _petData!.exp + exp : _petData!.exp,
       );
       
       notifyListeners();
