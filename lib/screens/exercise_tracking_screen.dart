@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
+import '../providers/exercise_provider.dart';
 import 'exercise_summary_screen.dart';
 
 class ExerciseTrackingScreen extends StatefulWidget {
@@ -26,11 +28,20 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
   final Stopwatch _stopwatch = Stopwatch();
   static const LatLng _defaultLocation = LatLng(36.802935, 127.069930);
 
+  bool _isTracking = false;
+  DateTime? _startTime;
+  double _distance = 0;
+  int _duration = 0;
+  int _calories = 0;
+  int _steps = 0;
+  List<LatLng> _path = [];
+
   @override
   void initState() {
     super.initState();
     _setMarkers();
     _startTracking();
+    _startExercise();
   }
 
   void _setMarkers() {
@@ -203,6 +214,53 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
     );
   }
 
+  void _startExercise() {
+    setState(() {
+      _isTracking = true;
+      _startTime = DateTime.now();
+    });
+    Provider.of<ExerciseProvider>(context, listen: false).startExercise('running');
+  }
+
+  void _updateExerciseProgress() {
+    if (!_isTracking) return;
+
+    setState(() {
+      _duration = DateTime.now().difference(_startTime!).inSeconds;
+      _distance += 0.01;
+      _calories = (_distance * 60).round();
+      _steps += 10;
+    });
+
+    Provider.of<ExerciseProvider>(context, listen: false).updateExerciseProgress(
+      distance: _distance,
+      duration: _duration,
+      calories: _calories,
+      steps: _steps,
+    );
+  }
+
+  void _endExercise() {
+    setState(() {
+      _isTracking = false;
+    });
+
+    Provider.of<ExerciseProvider>(context, listen: false).endExercise();
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExerciseSummaryScreen(
+          path: [],
+          totalDistance: _distance,
+          totalTime: Duration(seconds: _duration),
+          xpEarned: (_distance * 10).round(),
+          coinsEarned: (_distance * 5).round(),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _positionStream?.cancel();
@@ -212,11 +270,41 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('운동 추적')),
+      appBar: AppBar(
+        title: const Text('운동 중'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('운동 종료'),
+                content: const Text('운동을 종료하시겠습니까?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('취소'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _endExercise();
+                    },
+                    child: const Text('종료'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
       body: Stack(
         children: [
           GoogleMap(
-            initialCameraPosition: CameraPosition(target: _defaultLocation, zoom: 15),
+            initialCameraPosition: CameraPosition(
+              target: _defaultLocation,
+              zoom: 15,
+            ),
             markers: _markers,
             polylines: {
               Polyline(
@@ -238,10 +326,17 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
             left: 0,
             right: 0,
             child: Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Color(0xFFFFF3E0),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                color: Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -249,36 +344,45 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _infoItem('뛴 거리', '${(_totalDistance / 1000).toStringAsFixed(1)}km'),
-                      _infoItem('시간', _formatDuration(_stopwatch.elapsed)),
-                      _infoItem('칼로리', '55kcal'),
+                      _buildExerciseMetric('거리', '${_distance.toStringAsFixed(2)} km'),
+                      _buildExerciseMetric('시간', '${(_duration / 60).floor()}:${(_duration % 60).toString().padLeft(2, '0')}'),
+                      _buildExerciseMetric('칼로리', '$_calories kcal'),
                     ],
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       Expanded(
                         child: ElevatedButton(
                           onPressed: _pauseOrResumeTracking,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _isPaused ? Colors.green : Colors.redAccent,
-                            padding: EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            backgroundColor: _isPaused ? Colors.green : Colors.orange,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
                           ),
-                          child: Text(_isPaused ? '운동 재개' : '운동 일시정지'),
+                          child: Text(
+                            _isPaused ? '운동 재개' : '운동 일시정지',
+                            style: const TextStyle(fontSize: 16),
+                          ),
                         ),
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: _stopTracking,
+                          onPressed: _endExercise,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            padding: EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            backgroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
                           ),
-                          child: Text('운동 종료'),
+                          child: const Text(
+                            '운동 종료',
+                            style: TextStyle(fontSize: 16),
+                          ),
                         ),
                       ),
                     ],
@@ -289,6 +393,28 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildExerciseMetric(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }

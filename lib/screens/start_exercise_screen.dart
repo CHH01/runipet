@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
+import '../providers/exercise_provider.dart';
+import 'exercise_tracking_screen.dart';
 
 class StartExerciseScreen extends StatefulWidget {
   const StartExerciseScreen({super.key});
@@ -14,16 +17,14 @@ class _StartExerciseScreenState extends State<StartExerciseScreen> {
   static const LatLng _defaultLocation = LatLng(36.802935, 127.069930);
   LatLng _currentLocation = _defaultLocation;
 
-  // 📌 예시 데이터 (이후 DB 연동 시 여기만 바꾸면 됨)
-  String petName = '루니펫';
-  double distanceKm = 2.13;
-  Duration exerciseTime = Duration(minutes: 32);
-  int kcal = 278;
-
   @override
   void initState() {
     super.initState();
     _moveToCurrentLocation();
+    // 운동 기록 로드
+    Future.microtask(() => 
+      Provider.of<ExerciseProvider>(context, listen: false).loadExerciseHistory()
+    );
   }
 
   void _moveToCurrentLocation() async {
@@ -51,86 +52,109 @@ class _StartExerciseScreenState extends State<StartExerciseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: _defaultLocation,
-              zoom: 15,
-            ),
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
-            onMapCreated: (controller) {
-              _mapController = controller;
-              _moveToCurrentLocation();
-            },
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-              margin: EdgeInsets.only(bottom: 20, left: 20, right: 20),
-              decoration: BoxDecoration(
-                color: Color(0xFFFFF3E0),
-                borderRadius: BorderRadius.circular(30),
+    return Consumer<ExerciseProvider>(
+      builder: (context, exerciseProvider, child) {
+        if (exerciseProvider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (exerciseProvider.error != null) {
+          return Center(child: Text('에러: ${exerciseProvider.error}'));
+        }
+
+        final lastExercise = exerciseProvider.exerciseHistory.isNotEmpty 
+            ? exerciseProvider.exerciseHistory.first 
+            : null;
+
+        return Scaffold(
+          body: Stack(
+            children: [
+              GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: _defaultLocation,
+                  zoom: 15,
+                ),
+                myLocationEnabled: true,
+                myLocationButtonEnabled: true,
+                onMapCreated: (controller) {
+                  _mapController = controller;
+                  _moveToCurrentLocation();
+                },
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '$petName과 지난 활동',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+                  margin: EdgeInsets.only(bottom: 20, left: 20, right: 20),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFFFF3E0),
+                    borderRadius: BorderRadius.circular(30),
                   ),
-                  SizedBox(height: 15),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Column(
-                        children: [
-                          Text('거리', style: TextStyle(fontWeight: FontWeight.bold)),
-                          SizedBox(height: 5),
-                          Text('${distanceKm.toStringAsFixed(2)} km'),
-                        ],
+                      Text(
+                        '지난 활동',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      Column(
-                        children: [
-                          Text('시간', style: TextStyle(fontWeight: FontWeight.bold)),
-                          SizedBox(height: 5),
-                          Text(formatDuration(exerciseTime)),
-                        ],
-                      ),
-                      Column(
-                        children: [
-                          Text('칼로리', style: TextStyle(fontWeight: FontWeight.bold)),
-                          SizedBox(height: 5),
-                          Text('$kcal'),
-                        ],
+                      SizedBox(height: 15),
+                      if (lastExercise != null) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Column(
+                              children: [
+                                Text('거리', style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 5),
+                                Text('${(lastExercise.distance / 1000).toStringAsFixed(1)} km'),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                Text('시간', style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 5),
+                                Text(formatDuration(Duration(seconds: lastExercise.duration))),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                Text('칼로리', style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 5),
+                                Text('${lastExercise.calories}'),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        Text('아직 운동 기록이 없습니다.'),
+                      ],
+                      SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 45,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => ExerciseTrackingScreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          ),
+                          child: Text('운동 시작'),
+                        ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 45,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/map_tracking');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                      ),
-                      child: Text('운동 시작'),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

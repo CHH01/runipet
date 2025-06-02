@@ -5,6 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'settings_screen.dart';
 import 'inventory_screen.dart';
 import 'profile_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/pet_provider.dart';
+import '../models/pet_data.dart';
+import '../models/user_data.dart';
 
 class PetHomeScreen extends StatefulWidget {
   final String petName;
@@ -76,6 +80,7 @@ class _PetHomeScreenState extends State<PetHomeScreen> {
   Timer? _buffTimer;
   Timer? _diseaseCheckTimer;
   DateTime? lastHungerNotiTime;
+  Timer? _messageUpdateTimer;
 
   @override
   void initState() {
@@ -84,6 +89,10 @@ class _PetHomeScreenState extends State<PetHomeScreen> {
     _applySatietyAndHappinessDecay();
     _startDiseaseCheckTimer();
     _updatePetMessage();
+    // 펫 데이터 로드
+    Future.microtask(() => 
+      Provider.of<PetProvider>(context, listen: false).loadPetData()
+    );
   }
 
   Future<void> _applySatietyAndHappinessDecay() async {
@@ -183,7 +192,19 @@ class _PetHomeScreenState extends State<PetHomeScreen> {
   void _goToInventory() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => InventoryScreen()),
+      MaterialPageRoute(
+        builder: (context) => InventoryScreen(
+          userData: UserData(
+            coin: 1000,
+            inventory: {},
+          ),
+          onUserDataChanged: (newUserData) {
+            setState(() {
+              // 사용자 데이터 업데이트
+            });
+          },
+        ),
+      ),
     );
     if (result is Map && result['buff'] != null) {
       final buff = result['buff'];
@@ -256,6 +277,7 @@ class _PetHomeScreenState extends State<PetHomeScreen> {
     _saveSatietyAndHappinessState();
     _diseaseCheckTimer?.cancel();
     _buffTimer?.cancel();
+    _messageUpdateTimer?.cancel();
     super.dispose();
   }
 
@@ -268,118 +290,138 @@ class _PetHomeScreenState extends State<PetHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double expPercent = petExp / maxExp;
+    return Consumer<PetProvider>(
+      builder: (context, petProvider, child) {
+        if (petProvider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(child: Image.asset(backgroundPath, fit: BoxFit.cover)),
-          SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => ProfileScreen()),
-                        ),
-                        child: CircleAvatar(
-                          backgroundImage: AssetImage('assets/images/user_profile.png'),
-                          radius: 24,
-                        ),
-                      ),
-                      SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+        if (petProvider.error != null) {
+          return Center(child: Text('에러: ${petProvider.error}'));
+        }
+
+        final petData = petProvider.petData;
+        if (petData == null) {
+          return const Center(child: Text('펫 데이터를 불러올 수 없습니다.'));
+        }
+
+        double expPercent = petData.exp / petData.maxExp;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(petData.name),
+          ),
+          body: Stack(
+            children: [
+              Positioned.fill(child: Image.asset(backgroundPath, fit: BoxFit.cover)),
+              SafeArea(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
                         children: [
-                          Row(
-                            children: [
-                              Text(petName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                              SizedBox(width: 8),
-                              Text('Lv. $petLevel', style: TextStyle(fontSize: 18)),
-                            ],
-                          ),
-                          SizedBox(height: 6),
-                          Stack(
-                            children: [
-                              Container(
-                                width: 180,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                              Container(
-                                width: 180 * expPercent,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 4),
-                          Text('Exp ${(expPercent * 100).toStringAsFixed(0)} %'),
-                          if (buffRemaining != null) ...[
-                            SizedBox(height: 4),
-                            Text(
-                              '버프 남은 시간: ${_formatBuffTime(buffRemaining!)}',
-                              style: TextStyle(color: Colors.redAccent),
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => ProfileScreen()),
                             ),
-                          ],
+                            child: CircleAvatar(
+                              backgroundImage: AssetImage('assets/images/user_profile.png'),
+                              radius: 24,
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(petName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                                  SizedBox(width: 8),
+                                  Text('Lv. $petLevel', style: TextStyle(fontSize: 18)),
+                                ],
+                              ),
+                              SizedBox(height: 6),
+                              Stack(
+                                children: [
+                                  Container(
+                                    width: 180,
+                                    height: 12,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[300],
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 180 * expPercent,
+                                    height: 12,
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 4),
+                              Text('Exp ${(expPercent * 100).toStringAsFixed(0)} %'),
+                              if (buffRemaining != null) ...[
+                                SizedBox(height: 4),
+                                Text(
+                                  '버프 남은 시간: ${_formatBuffTime(buffRemaining!)}',
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _statusIndicator('행복', petData.happiness),
+                          _statusIndicator('포만감', petData.satiety),
+                        ],
+                      ),
+                    ),
+                    Spacer(),
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                      ),
+                      child: Text(petMessage, style: TextStyle(fontSize: 16)),
+                    ),
+                    SizedBox(height: 8),
+                    Image.asset(petImagePath, height: 280),
+                    SizedBox(height: 8),
+                    Text(
+                      petStatus,
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: _goToInventory,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                      child: Text('아이템 사용', style: TextStyle(fontSize: 16, color: Colors.white)),
+                    ),
+                    SizedBox(height: 16),
+                  ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _statusIndicator('행복', happiness),
-                      _statusIndicator('포만감', satiety),
-                    ],
-                  ),
-                ),
-                Spacer(),
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-                  ),
-                  child: Text(petMessage, style: TextStyle(fontSize: 16)),
-                ),
-                SizedBox(height: 8),
-                Image.asset(petImagePath, height: 280),
-                SizedBox(height: 8),
-                Text(
-                  petStatus,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: _goToInventory,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  ),
-                  child: Text('아이템 사용', style: TextStyle(fontSize: 16, color: Colors.white)),
-                ),
-                SizedBox(height: 16),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
