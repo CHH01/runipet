@@ -219,7 +219,7 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
       _isTracking = true;
       _startTime = DateTime.now();
     });
-    Provider.of<ExerciseProvider>(context, listen: false).startExercise('running');
+    Provider.of<ExerciseProvider>(context, listen: false).startExercise();
   }
 
   void _updateExerciseProgress() {

@@ -5,6 +5,7 @@ class ShopItem {
   final String imagePath;
   final int price;
   final Map<String, dynamic> effect;
+  final String type;
 
   ShopItem({
     required this.id,
@@ -13,6 +14,7 @@ class ShopItem {
     required this.imagePath,
     required this.price,
     required this.effect,
+    required this.type,
   });
 
   factory ShopItem.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class ShopItem {
       imagePath: json['imagePath'] as String,
       price: json['price'] as int,
       effect: json['effect'] as Map<String, dynamic>,
+      type: json['type'] as String,
     );
   }
 
@@ -34,6 +37,7 @@ class ShopItem {
       'imagePath': imagePath,
       'price': price,
       'effect': effect,
+      'type': type,
     };
   }
 } 

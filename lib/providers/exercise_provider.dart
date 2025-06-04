@@ -5,10 +5,20 @@ class ExerciseProvider with ChangeNotifier {
   List<ExerciseData> _exerciseHistory = [];
   bool _isLoading = false;
   String? _error;
+  bool _isExercising = false;
+  double _distance = 0;
+  int _duration = 0;
+  int _calories = 0;
+  int _steps = 0;
 
   List<ExerciseData> get exerciseHistory => _exerciseHistory;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isExercising => _isExercising;
+  double get distance => _distance;
+  int get duration => _duration;
+  int get calories => _calories;
+  int get steps => _steps;
 
   Future<void> loadExerciseHistory() async {
     _isLoading = true;
@@ -38,28 +48,30 @@ class ExerciseProvider with ChangeNotifier {
     }
   }
 
-  Future<void> startExercise() async {
-    try {
-      // TODO: API 호출로 변경
-      await Future.delayed(const Duration(milliseconds: 500)); // 임시 딜레이
-      // 운동 시작 로직 구현
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      rethrow;
-    }
+  void startExercise() {
+    _isExercising = true;
+    _distance = 0;
+    _duration = 0;
+    _calories = 0;
+    _steps = 0;
+    notifyListeners();
   }
 
-  Future<void> endExercise(ExerciseData exerciseData) async {
-    try {
-      // TODO: API 호출로 변경
-      await Future.delayed(const Duration(milliseconds: 500)); // 임시 딜레이
-      _exerciseHistory.insert(0, exerciseData);
-      notifyListeners();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      rethrow;
-    }
+  void updateExerciseProgress({
+    required double distance,
+    required int duration,
+    required int calories,
+    required int steps,
+  }) {
+    _distance = distance;
+    _duration = duration;
+    _calories = calories;
+    _steps = steps;
+    notifyListeners();
+  }
+
+  void endExercise() {
+    _isExercising = false;
+    notifyListeners();
   }
 } 

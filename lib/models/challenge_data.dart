@@ -16,7 +16,7 @@ class ChallengeData {
     required this.reward,
     required this.current,
     required this.goal,
-    required this.completed,
+    this.completed = false,
   });
 
   factory ChallengeData.fromJson(Map<String, dynamic> json) {
@@ -28,7 +28,7 @@ class ChallengeData {
       reward: json['reward'] as int,
       current: json['current'] as int,
       goal: json['goal'] as int,
-      completed: json['completed'] as bool,
+      completed: json['completed'] as bool? ?? false,
     );
   }
 

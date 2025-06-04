@@ -141,7 +141,19 @@ class RankingProvider with ChangeNotifier {
     return currentRankings.take(3).toList();
   }
 
-  RankingData? getMyRanking() {
-    return _rankings.firstWhere((r) => r.isMe, orElse: () => null);
+  RankingData getMyRanking() {
+    return _rankings.firstWhere(
+      (r) => r.isMe,
+      orElse: () => RankingData(
+        name: 'Me',
+        userId: 'me',
+        level: 1,
+        totalSteps: 0,
+        totalDistance: 0,
+        totalCalories: 0,
+        isMe: true,
+        isFriend: false,
+      ),
+    );
   }
 } 

@@ -17,7 +17,7 @@ class ChallengeProvider with ChangeNotifier {
 
     try {
       // TODO: API 호출로 변경
-      await Future.delayed(const Duration(seconds: 1));
+      await Future.delayed(const Duration(seconds: 1)); // 임시 딜레이
       _challenges = [
         ChallengeData(
           id: 'first_exercise',
@@ -27,7 +27,6 @@ class ChallengeProvider with ChangeNotifier {
           reward: 100,
           current: 0,
           goal: 1,
-          completed: true,
         ),
         ChallengeData(
           id: '50km',
@@ -37,7 +36,6 @@ class ChallengeProvider with ChangeNotifier {
           reward: 3000,
           current: 0,
           goal: 50,
-          completed: false,
         ),
         ChallengeData(
           id: '1hour',
@@ -47,7 +45,6 @@ class ChallengeProvider with ChangeNotifier {
           reward: 500,
           current: 0,
           goal: 1,
-          completed: true,
         ),
         ChallengeData(
           id: '10times',
@@ -57,7 +54,6 @@ class ChallengeProvider with ChangeNotifier {
           reward: 1000,
           current: 0,
           goal: 10,
-          completed: false,
         ),
       ];
     } catch (e) {
@@ -68,36 +64,23 @@ class ChallengeProvider with ChangeNotifier {
     }
   }
 
-  Future<void> updateChallengeProgress(String challengeId, int progress) async {
-    try {
-      // TODO: API 호출로 변경
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      final index = _challenges.indexWhere((c) => c.id == challengeId);
-      if (index != -1) {
-        final challenge = _challenges[index];
-        final newProgress = challenge.current + progress;
-        final completed = newProgress >= challenge.goal;
-        
-        _challenges[index] = challenge.copyWith(
-          current: newProgress,
-          completed: completed,
-        );
-        
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = e.toString();
+  void completeChallenge(String id) {
+    final index = _challenges.indexWhere((c) => c.id == id);
+    if (index != -1) {
+      _challenges[index] = _challenges[index].copyWith(
+        completed: true,
+      );
       notifyListeners();
-      rethrow;
     }
   }
 
-  List<ChallengeData> getCompletedChallenges() {
-    return _challenges.where((c) => c.completed).toList();
-  }
-
-  List<ChallengeData> getInProgressChallenges() {
-    return _challenges.where((c) => !c.completed).toList();
+  void updateProgress(String id, int progress) {
+    final index = _challenges.indexWhere((c) => c.id == id);
+    if (index != -1) {
+      _challenges[index] = _challenges[index].copyWith(
+        current: progress,
+      );
+      notifyListeners();
+    }
   }
 } 

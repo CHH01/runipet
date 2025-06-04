@@ -1,4 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/pet_data.dart';
 
 class PetProvider with ChangeNotifier {
@@ -10,7 +12,7 @@ class PetProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> loadPetData() async {
+  Future<void> createPet(String name, String type) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -19,18 +21,73 @@ class PetProvider with ChangeNotifier {
       // TODO: API 호출로 변경
       await Future.delayed(const Duration(seconds: 1));
       _petData = PetData(
-        id: '1',
-        name: '멍멍이',
-        type: 'dog',
-        imagePath: 'assets/images/pets/dog.png',
-        satiety: 80,
-        happiness: 90,
-        health: 100,
+        id: '1',  // 임시 ID
+        name: name,
+        type: type,
+        imagePath: 'assets/images/pet/$type/stage_1_egg/normal.png',
         level: 1,
         exp: 0,
+        maxExp: 5000,
+        happiness: 100,
+        satiety: 100,
+        health: 100,
       );
+      _error = null;
+
+      // 펫 데이터를 SharedPreferences에 저장
+      final prefs = await SharedPreferences.getInstance();
+      final petDataJson = jsonEncode({
+        'id': _petData!.id,
+        'name': _petData!.name,
+        'type': _petData!.type,
+        'imagePath': _petData!.imagePath,
+        'level': _petData!.level,
+        'exp': _petData!.exp,
+        'maxExp': _petData!.maxExp,
+        'happiness': _petData!.happiness,
+        'satiety': _petData!.satiety,
+        'health': _petData!.health,
+      });
+      await prefs.setString('petData', petDataJson);
     } catch (e) {
       _error = e.toString();
+      _petData = null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadPetData() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final petDataJson = prefs.getString('petData');
+      
+      if (petDataJson != null) {
+        final Map<String, dynamic> petDataMap = jsonDecode(petDataJson);
+        _petData = PetData(
+          id: petDataMap['id'],
+          name: petDataMap['name'],
+          type: petDataMap['type'],
+          imagePath: petDataMap['imagePath'],
+          level: petDataMap['level'],
+          exp: petDataMap['exp'],
+          maxExp: petDataMap['maxExp'],
+          happiness: petDataMap['happiness'],
+          satiety: petDataMap['satiety'],
+          health: petDataMap['health'],
+        );
+        _error = null;
+      } else {
+        _error = '펫 데이터가 없습니다.';
+      }
+    } catch (e) {
+      _error = e.toString();
+      _petData = null;
     } finally {
       _isLoading = false;
       notifyListeners();

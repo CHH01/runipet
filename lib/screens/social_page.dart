@@ -6,14 +6,12 @@ import 'friend_add_page.dart';
 import 'friend_profile_screen.dart';
 
 class SocialPage extends StatelessWidget {
-  final String gender;
   final List<Map<String, dynamic>> friends;
   final void Function(Map<String, dynamic>) onFriendAccepted;
   final void Function(String name) onFriendDeleted;
 
   const SocialPage({
     super.key,
-    required this.gender,
     required this.friends,
     required this.onFriendAccepted,
     required this.onFriendDeleted,
@@ -21,8 +19,6 @@ class SocialPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final profileImage = 'assets/profile_$gender.png';
-
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -33,7 +29,7 @@ class SocialPage extends StatelessWidget {
           title: Row(
             children: [
               CircleAvatar(
-                backgroundImage: AssetImage(profileImage),
+                backgroundImage: AssetImage('assets/images/user_profile.png'),
                 radius: 18,
               ),
               const SizedBox(width: 8),

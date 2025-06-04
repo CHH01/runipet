@@ -13,6 +13,8 @@ import 'start_exercise_screen.dart';
 import 'challenge_screen.dart';
 import 'shop_page.dart';
 import 'inventory_screen.dart';
+import 'settings_screen.dart';
+import 'social_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -22,7 +24,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 2;
   late UserData _userData;
 
   @override
@@ -67,18 +69,21 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             ChallengeScreen(onReward: _onReward),
             const StartExerciseScreen(),
-            const PetHomeScreen(
-              petName: '멍멍이',
-              petType: 'dog',
-            ),
+            const PetHomeScreen(),
             ShopPage(
               userData: _userData,
               onUserDataChanged: _onUserDataChanged,
             ),
-            InventoryScreen(
-              userData: _userData,
-              onUserDataChanged: _onUserDataChanged,
+            SocialPage(
+              friends: [],
+              onFriendAccepted: (friend) {
+                // 친구 수락 처리
+              },
+              onFriendDeleted: (friendId) {
+                // 친구 삭제 처리
+              },
             ),
+            const SettingScreen(),
           ],
         ),
         bottomNavigationBar: BottomNavigationBar(
@@ -105,6 +110,10 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.shopping_cart),
               label: '상점',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people),
+              label: '소셜',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings),

@@ -9,16 +9,11 @@ import 'package:provider/provider.dart';
 import '../providers/pet_provider.dart';
 import '../models/pet_data.dart';
 import '../models/user_data.dart';
+import '../providers/notification_provider.dart';
+import '../providers/inventory_provider.dart';
 
 class PetHomeScreen extends StatefulWidget {
-  final String petName;
-  final String petType;
-
-  const PetHomeScreen({
-    super.key,
-    required this.petName,
-    required this.petType,
-  });
+  const PetHomeScreen({super.key});
 
   @override
   State<PetHomeScreen> createState() => _PetHomeScreenState();
@@ -72,7 +67,8 @@ class _PetHomeScreenState extends State<PetHomeScreen> {
       }
     }
 
-    return 'assets/images/pet/${widget.petType}/$stage/$status.png';
+    final petProvider = Provider.of<PetProvider>(context, listen: false);
+    return 'assets/images/pet/${petProvider.petData?.type ?? 'dog'}/$stage/$status.png';
   }
 
   Duration? buffRemaining;
@@ -85,14 +81,18 @@ class _PetHomeScreenState extends State<PetHomeScreen> {
   @override
   void initState() {
     super.initState();
-    petName = widget.petName;
+    print('PetHomeScreen - initState');
+    _loadPetData();
     _applySatietyAndHappinessDecay();
     _startDiseaseCheckTimer();
     _updatePetMessage();
-    // 펫 데이터 로드
-    Future.microtask(() => 
-      Provider.of<PetProvider>(context, listen: false).loadPetData()
-    );
+  }
+
+  Future<void> _loadPetData() async {
+    print('PetHomeScreen - _loadPetData 시작');
+    final petProvider = Provider.of<PetProvider>(context, listen: false);
+    await petProvider.loadPetData();
+    print('PetHomeScreen - _loadPetData 완료: ${petProvider.petData}');
   }
 
   Future<void> _applySatietyAndHappinessDecay() async {
@@ -193,16 +193,18 @@ class _PetHomeScreenState extends State<PetHomeScreen> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => InventoryScreen(
-          userData: UserData(
-            coin: 1000,
-            inventory: {},
+        builder: (context) => Consumer<InventoryProvider>(
+          builder: (context, inventoryProvider, child) => InventoryScreen(
+            userData: UserData(
+              coin: 1000,
+              inventory: {},
+            ),
+            onUserDataChanged: (newUserData) {
+              setState(() {
+                // 사용자 데이터 업데이트
+              });
+            },
           ),
-          onUserDataChanged: (newUserData) {
-            setState(() {
-              // 사용자 데이터 업데이트
-            });
-          },
         ),
       ),
     );
@@ -290,138 +292,157 @@ class _PetHomeScreenState extends State<PetHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PetProvider>(
-      builder: (context, petProvider, child) {
-        if (petProvider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    final petProvider = Provider.of<PetProvider>(context);
+    print('PetHomeScreen - isLoading: ${petProvider.isLoading}');
+    print('PetHomeScreen - error: ${petProvider.error}');
+    print('PetHomeScreen - petData: ${petProvider.petData}');
+    
+    if (petProvider.isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
-        if (petProvider.error != null) {
-          return Center(child: Text('에러: ${petProvider.error}'));
-        }
+    if (petProvider.error != null) {
+      return Scaffold(
+        body: Center(
+          child: Text('에러: ${petProvider.error}'),
+        ),
+      );
+    }
 
-        final petData = petProvider.petData;
-        if (petData == null) {
-          return const Center(child: Text('펫 데이터를 불러올 수 없습니다.'));
-        }
+    final petData = petProvider.petData;
+    if (petData == null) {
+      return Scaffold(
+        body: Center(
+          child: Text('펫 데이터를 불러올 수 없습니다.'),
+        ),
+      );
+    }
 
-        double expPercent = petData.exp / petData.maxExp;
+    petName = petData.name;
+    petLevel = petData.level;
+    petExp = petData.exp;
+    maxExp = petData.maxExp;
+    happiness = petData.happiness;
+    satiety = petData.satiety;
+    _updatePetMessage();
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(petData.name),
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(backgroundPath),
+            fit: BoxFit.cover,
           ),
-          body: Stack(
+        ),
+        child: SafeArea(
+          child: Column(
             children: [
-              Positioned.fill(child: Image.asset(backgroundPath, fit: BoxFit.cover)),
-              SafeArea(
-                child: Column(
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => ProfileScreen()),
-                            ),
-                            child: CircleAvatar(
-                              backgroundImage: AssetImage('assets/images/user_profile.png'),
-                              radius: 24,
-                            ),
-                          ),
-                          SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(petName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                                  SizedBox(width: 8),
-                                  Text('Lv. $petLevel', style: TextStyle(fontSize: 18)),
-                                ],
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ProfileScreen()),
+                      ),
+                      child: CircleAvatar(
+                        backgroundImage: AssetImage('assets/images/user_profile.png'),
+                        radius: 24,
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(petName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                            SizedBox(width: 8),
+                            Text('Lv. $petLevel', style: TextStyle(fontSize: 18)),
+                          ],
+                        ),
+                        SizedBox(height: 6),
+                        Stack(
+                          children: [
+                            Container(
+                              width: 180,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(6),
                               ),
-                              SizedBox(height: 6),
-                              Stack(
-                                children: [
-                                  Container(
-                                    width: 180,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[300],
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 180 * expPercent,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: Colors.green,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                  ),
-                                ],
+                            ),
+                            Container(
+                              width: 180 * (petExp / maxExp),
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(6),
                               ),
-                              SizedBox(height: 4),
-                              Text('Exp ${(expPercent * 100).toStringAsFixed(0)} %'),
-                              if (buffRemaining != null) ...[
-                                SizedBox(height: 4),
-                                Text(
-                                  '버프 남은 시간: ${_formatBuffTime(buffRemaining!)}',
-                                  style: TextStyle(color: Colors.redAccent),
-                                ),
-                              ],
-                            ],
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 4),
+                        Text('Exp ${(petExp / maxExp * 100).toStringAsFixed(0)} %'),
+                        if (buffRemaining != null) ...[
+                          SizedBox(height: 4),
+                          Text(
+                            '버프 남은 시간: ${_formatBuffTime(buffRemaining!)}',
+                            style: TextStyle(color: Colors.redAccent),
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _statusIndicator('행복', petData.happiness),
-                          _statusIndicator('포만감', petData.satiety),
-                        ],
-                      ),
-                    ),
-                    Spacer(),
-                    Container(
-                      padding: EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-                      ),
-                      child: Text(petMessage, style: TextStyle(fontSize: 16)),
-                    ),
-                    SizedBox(height: 8),
-                    Image.asset(petImagePath, height: 280),
-                    SizedBox(height: 8),
-                    Text(
-                      petStatus,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: _goToInventory,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                      ),
-                      child: Text('아이템 사용', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    ),
-                    SizedBox(height: 16),
                   ],
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _statusIndicator('행복', happiness),
+                    _statusIndicator('포만감', satiety),
+                  ],
+                ),
+              ),
+              Spacer(),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                ),
+                child: Text(petMessage, style: TextStyle(fontSize: 16)),
+              ),
+              SizedBox(height: 8),
+              Image.asset(petImagePath, height: 280),
+              SizedBox(height: 8),
+              Text(
+                petStatus,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: _goToInventory,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                ),
+                child: Text('아이템 사용', style: TextStyle(fontSize: 16, color: Colors.white)),
+              ),
+              SizedBox(height: 16),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -437,22 +458,20 @@ class _PetHomeScreenState extends State<PetHomeScreen> {
   }
 
   void _checkSatietyAndNotify() async {
-    final setting = context.findAncestorStateOfType<SettingScreenState>();
-    if (setting == null) return;
-
-    if (satiety < 50 && setting.hungerNoti) {
+    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+    if (satiety < 50 && notificationProvider.hungerNoti) {
       final now = DateTime.now();
       if (lastHungerNotiTime == null || now.difference(lastHungerNotiTime!).inHours >= 12) {
-        await setting.scheduleHungerNotification(); // 또는 showHungerNotification() 등 단일 알림
+        await notificationProvider.scheduleHungerNotification();
         lastHungerNotiTime = now;
       }
     }
   }
 
   void _onLevelUp() {
-    final setting = context.findAncestorStateOfType<SettingScreenState>();
-    if (setting != null && setting.growthNoti) {
-      setting.showGrowthNotification();
+    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+    if (notificationProvider.growthNoti) {
+      notificationProvider.showGrowthNotification();
     }
   }
 }
