@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/social_provider.dart';
+import '../models/friend_data.dart';
 
 class FriendRequestPage extends StatefulWidget {
-  final Function(Map<String, dynamic>) onFriendAccepted;
-  const FriendRequestPage({super.key, required this.onFriendAccepted});
+  final Function(FriendData) onFriendAccepted;
+
+  const FriendRequestPage({
+    Key? key,
+    required this.onFriendAccepted,
+  }) : super(key: key);
 
   @override
   State<FriendRequestPage> createState() => _FriendRequestPageState();
@@ -10,21 +17,26 @@ class FriendRequestPage extends StatefulWidget {
 
 class _FriendRequestPageState extends State<FriendRequestPage> {
   final TextEditingController _searchController = TextEditingController();
-
-  List<Map<String, dynamic>> _requests = [
-    {'name': '현진', 'level': 2},
-    {'name': '종천', 'level': 3},
-    {'name': '원상', 'level': 4},
-  ];
-
   String _searchQuery = '';
 
   @override
-  Widget build(BuildContext context) {
-    final filtered = _requests.where((user) {
-      return user['name'].toString().contains(_searchQuery);
-    }).toList();
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
+  }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD5F3C4),
       appBar: AppBar(
@@ -49,54 +61,85 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: ListView.builder(
-                itemCount: filtered.length,
-                itemBuilder: (context, index) {
-                  final user = filtered[index];
-                  final name = user['name'];
+              child: Consumer<SocialProvider>(
+                builder: (context, socialProvider, child) {
+                  if (socialProvider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                  return Card(
-                    color: const Color(0xFFFFF5D1),
-                    child: ListTile(
-                      leading: const CircleAvatar(backgroundColor: Colors.grey),
-                      title: Text("$name - Lv.${user['level']}"),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.check_circle, color: Colors.green),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("$name님 친구 수락됨")),
-                              );
-                              widget.onFriendAccepted(user);
-                              setState(() {
-                                _requests.removeWhere((r) => r['name'] == name);
-                              });
-                            },
+                  if (socialProvider.error != null) {
+                    return Center(child: Text('에러: ${socialProvider.error}'));
+                  }
+
+                  final requests = socialProvider.pendingRequests;
+                  final filtered = requests.where((request) {
+                    return request.username.toLowerCase().contains(_searchQuery.toLowerCase());
+                  }).toList();
+
+                  if (filtered.isEmpty) {
+                    return const Center(child: Text('친구 요청이 없습니다.'));
+                  }
+
+                  return ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final request = filtered[index];
+                      return Card(
+                        color: const Color(0xFFFFF5D1),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage: request.profileImage != null
+                                ? NetworkImage(request.profileImage!)
+                                : null,
+                            backgroundColor: Colors.grey,
+                            child: request.profileImage == null
+                                ? const Icon(Icons.person)
+                                : null,
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.cancel, color: Colors.red),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("$name님 친구 거절됨")),
-                              );
-                              setState(() {
-                                _requests.removeWhere((r) => r['name'] == name);
-                              });
-                            },
-                          )
-                        ],
-                      ),
-                    ),
+                          title: Text(request.username),
+                          subtitle: Text('Level ${request.level}'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.check_circle, color: Colors.green),
+                                onPressed: () async {
+                                  try {
+                                    await socialProvider.acceptFriendRequest(request.userId.toString());
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text("${request.username}님 친구 수락됨")),
+                                    );
+                                    widget.onFriendAccepted(request);
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text("친구 수락 실패: $e")),
+                                    );
+                                  }
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.cancel, color: Colors.red),
+                                onPressed: () async {
+                                  try {
+                                    await socialProvider.rejectFriendRequest(request.userId.toString());
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text("${request.username}님 친구 거절됨")),
+                                    );
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text("친구 거절 실패: $e")),
+                                    );
+                                  }
+                                },
+                              )
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),

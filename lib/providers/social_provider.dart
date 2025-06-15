@@ -5,14 +5,14 @@ import '../services/api_service.dart';
 class SocialProvider with ChangeNotifier {
   final ApiService _apiService;
   List<FriendData> _friends = [];
-  List<String> _pendingRequests = [];
+  List<FriendData> _pendingRequests = [];
   bool _isLoading = false;
   String? _error;
 
   SocialProvider(this._apiService);
 
   List<FriendData> get friends => _friends;
-  List<String> get pendingRequests => _pendingRequests;
+  List<FriendData> get pendingRequests => _pendingRequests;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -22,7 +22,8 @@ class SocialProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _friends = await _apiService.getFriends();
+      final response = await _apiService.getFriends();
+      _friends = response.map((json) => FriendData.fromJson(json)).toList();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -31,13 +32,14 @@ class SocialProvider with ChangeNotifier {
     }
   }
 
-  Future<void> sendFriendRequest(String userId) async {
+  Future<void> loadPendingRequests() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _apiService.sendFriendRequest(userId);
+      final response = await _apiService.getPendingRequests();
+      _pendingRequests = response.map((json) => FriendData.fromJson(json)).toList();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -46,14 +48,33 @@ class SocialProvider with ChangeNotifier {
     }
   }
 
-  Future<void> acceptFriendRequest(String requestId) async {
+  /// 친구 요청을 보냅니다.
+  /// [friendId]는 대상 사용자의 ID입니다.
+  Future<void> sendFriendRequest(String friendId) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _apiService.acceptFriendRequest(requestId);
-      _pendingRequests.remove(requestId);
+      await _apiService.sendFriendRequest(friendId);
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// 친구 요청을 수락합니다.
+  /// [friendId]는 요청을 보낸 사용자의 ID입니다.
+  Future<void> acceptFriendRequest(String friendId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _apiService.acceptFriendRequest(friendId);
+      _pendingRequests.removeWhere((friend) => friend.userId == friendId);
       await loadFriends(); // 친구 목록 새로고침
     } catch (e) {
       _error = e.toString();
@@ -63,6 +84,26 @@ class SocialProvider with ChangeNotifier {
     }
   }
 
+  /// 친구 요청을 거절합니다.
+  /// [friendId]는 요청을 보낸 사용자의 ID입니다.
+  Future<void> rejectFriendRequest(String friendId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _apiService.rejectFriendRequest(friendId);
+      _pendingRequests.remove(friendId);
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// 친구를 삭제합니다.
+  /// [friendId]는 삭제할 친구의 ID입니다.
   Future<void> deleteFriend(String friendId) async {
     _isLoading = true;
     _error = null;
@@ -70,7 +111,7 @@ class SocialProvider with ChangeNotifier {
 
     try {
       await _apiService.deleteFriend(friendId);
-      _friends.removeWhere((friend) => friend.id == friendId);
+      _friends.removeWhere((friend) => friend.userId == friendId);
     } catch (e) {
       _error = e.toString();
     } finally {

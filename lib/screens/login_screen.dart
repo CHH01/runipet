@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -8,11 +10,57 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _idController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final _apiService = ApiService(
+    baseUrl: 'http://10.0.2.2:5000',
+    secureStorage: const FlutterSecureStorage()
+  );
+  bool _isLoading = false;
 
-  final String _correctId = 'test';      // 임시 아이디
-  final String _correctPassword = '1234'; // 임시 비밀번호
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('아이디와 비밀번호를 모두 입력해주세요.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final response = await _apiService.login(username, password);
+      
+      if (mounted) {
+        // 펫 정보 확인
+        final hasPet = response['has_pet'] ?? false;
+        if (hasPet) {
+          Navigator.pushReplacementNamed(context, '/main');
+        } else {
+          Navigator.pushReplacementNamed(context, '/pet_select');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,146 +70,76 @@ class _LoginScreenState extends State<LoginScreen> {
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 30),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 상단 이미지
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: Image.asset(
-                    'assets/images/logo.png', 
-                    width: 200,
-                    height: 200,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                SizedBox(height: 30),
-
-                // 아이디 입력
+                Image.asset('assets/images/logo.png', width: 200, height: 100),
+                SizedBox(height: 20),
                 TextFormField(
-                  controller: _idController,
+                  controller: _usernameController,
                   decoration: InputDecoration(
                     hintText: '아이디',
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black),
-                    ),
+                    filled: true,
+                    fillColor: Color(0xFFF5F5F5),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
                   ),
                 ),
-                SizedBox(height: 20),
-
-                // 비밀번호 입력
+                SizedBox(height: 15),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
                     hintText: '비밀번호',
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black),
-                    ),
+                    filled: true,
+                    fillColor: Color(0xFFF5F5F5),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
                   ),
                 ),
-                SizedBox(height: 30),
-
-                // 로그인 버튼
+                SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   height: 45,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     ),
-                    onPressed: _login,
-                    child: Text(
-                      '로그인',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    ),
+                    onPressed: _isLoading ? null : _login,
+                    child: _isLoading
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text('로그인'),
                   ),
                 ),
                 SizedBox(height: 10),
-
-                // 회원가입 버튼
-                SizedBox(
-                  width: double.infinity,
-                  height: 45,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/signup');
-                    },
-                    child: Text(
-                      '회원가입',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 10),
-
-                // 아이디 찾기와 비밀번호 찾기 버튼
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/find_id');
-                      },
-                      child: Text(
-                        '아이디 찾기',
-                        style: TextStyle(color: Colors.black),
-                      ),
+                      onPressed: () => Navigator.pushNamed(context, '/find_id'),
+                      child: Text('아이디 찾기'),
                     ),
-                    Text(
-                      ' | ',
-                      style: TextStyle(color: Colors.black),
-                    ),
+                    Text('|'),
                     TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/find_password');
-                      },
-                      child: Text(
-                        '비밀번호 찾기',
-                        style: TextStyle(color: Colors.black),
-                      ),
+                      onPressed: () => Navigator.pushNamed(context, '/find_password'),
+                      child: Text('비밀번호 찾기'),
+                    ),
+                    Text('|'),
+                    TextButton(
+                      onPressed: () => Navigator.pushNamed(context, '/signup'),
+                      child: Text('회원가입'),
                     ),
                   ],
                 ),
-                SizedBox(height: 10),
               ],
             ),
           ),
         ),
       ),
     );
-  }
-
-  void _login() {
-    String inputId = _idController.text.trim();
-    String inputPassword = _passwordController.text.trim();
-
-    if (inputId == _correctId && inputPassword == _correctPassword) {
-      // 로그인 성공 시 펫 선택 화면으로 이동
-      Navigator.pushReplacementNamed(context, '/pet_select');
-    } else {
-      // 로그인 실패 → 에러 팝업
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('로그인 실패'),
-          content: Text('아이디 또는 비밀번호가 일치하지 않습니다.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('확인'),
-            ),
-          ],
-        ),
-      );
-    }
   }
 }

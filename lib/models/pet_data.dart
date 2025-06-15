@@ -1,81 +1,81 @@
 class PetData {
-  final String id;
-  final String name;
+  final int petId;
+  final String nickname;
   final String type;
-  final String imagePath;
-  final int satiety;
-  final int happiness;
-  final int health;
   final int level;
   final int exp;
-  final int maxExp;
+  final int fullness;
+  final int happiness;
+  final String healthStatus;
+  final int stageId;
+  final int statusMessageId;
 
   PetData({
-    required this.id,
-    required this.name,
+    required this.petId,
+    required this.nickname,
     required this.type,
-    required this.imagePath,
-    required this.satiety,
-    required this.happiness,
-    required this.health,
     required this.level,
     required this.exp,
-    this.maxExp = 5000,
+    required this.fullness,
+    required this.happiness,
+    required this.healthStatus,
+    required this.stageId,
+    required this.statusMessageId,
   });
 
   factory PetData.fromJson(Map<String, dynamic> json) {
     return PetData(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      type: json['type'] as String,
-      imagePath: json['imagePath'] as String,
-      satiety: json['satiety'] as int,
-      happiness: json['happiness'] as int,
-      health: json['health'] as int,
-      level: json['level'] as int,
-      exp: json['exp'] as int,
-      maxExp: json['maxExp'] as int? ?? 5000,
+      petId: json['pet_id'],
+      nickname: json['nickname'],
+      type: json['type'],
+      level: json['level'],
+      exp: json['exp'],
+      fullness: json['fullness'],
+      happiness: json['happiness'],
+      healthStatus: json['health_status'],
+      stageId: json['stage_id'],
+      statusMessageId: json['status_message_id'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'name': name,
+      'pet_id': petId,
+      'nickname': nickname,
       'type': type,
-      'imagePath': imagePath,
-      'satiety': satiety,
-      'happiness': happiness,
-      'health': health,
       'level': level,
       'exp': exp,
-      'maxExp': maxExp,
+      'fullness': fullness,
+      'happiness': happiness,
+      'health_status': healthStatus,
+      'stage_id': stageId,
+      'status_message_id': statusMessageId,
     };
   }
 
   PetData copyWith({
-    String? id,
-    String? name,
+    int? petId,
+    String? nickname,
     String? type,
-    String? imagePath,
-    int? satiety,
-    int? happiness,
-    int? health,
     int? level,
     int? exp,
-    int? maxExp,
+    int? fullness,
+    int? happiness,
+    String? healthStatus,
+    int? stageId,
+    int? statusMessageId,
   }) {
     return PetData(
-      id: id ?? this.id,
-      name: name ?? this.name,
+      petId: petId ?? this.petId,
+      nickname: nickname ?? this.nickname,
       type: type ?? this.type,
-      imagePath: imagePath ?? this.imagePath,
-      satiety: satiety ?? this.satiety,
-      happiness: happiness ?? this.happiness,
-      health: health ?? this.health,
       level: level ?? this.level,
       exp: exp ?? this.exp,
-      maxExp: maxExp ?? this.maxExp,
+      fullness: fullness ?? this.fullness,
+      happiness: happiness ?? this.happiness,
+      healthStatus: healthStatus ?? this.healthStatus,
+      stageId: stageId ?? this.stageId,
+      statusMessageId: statusMessageId ?? this.statusMessageId,
     );
   }
 } 

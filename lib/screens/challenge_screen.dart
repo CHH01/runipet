@@ -30,14 +30,55 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     return Consumer<ChallengeProvider>(
       builder: (context, challengeProvider, child) {
         if (challengeProvider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         if (challengeProvider.error != null) {
-          return Center(child: Text('에러: ${challengeProvider.error}'));
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('도전과제'),
+              backgroundColor: Colors.orange,
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('도전과제를 불러오는데 실패했습니다: ${challengeProvider.error}'),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => challengeProvider.loadChallenges(),
+                    child: Text('다시 시도'),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
         final challenges = challengeProvider.challenges;
+        if (challenges.isEmpty) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('도전과제'),
+              backgroundColor: Colors.orange,
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('도전과제가 없습니다.'),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => challengeProvider.initChallenges(),
+                    child: Text('도전과제 초기화'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -83,7 +124,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                     ],
                   ),
                   trailing: Text(
-                    '+${challenge.reward} 코인',
+                    '+${challenge.reward_value} 코인',
                     style: const TextStyle(
                       color: Colors.orange,
                       fontWeight: FontWeight.bold,
@@ -91,11 +132,11 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   ),
                   onTap: () {
                     if (!challenge.completed && challenge.current >= challenge.goal) {
-                      challengeProvider.completeChallenge(challenge.id);
-                      widget.onReward(challenge.reward);
+                      challengeProvider.claimReward(challenge.id);
+                      widget.onReward(challenge.reward_value);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('${challenge.reward} 코인을 획득했습니다!'),
+                          content: Text('${challenge.reward_value} 코인을 획득했습니다!'),
                           duration: const Duration(seconds: 2),
                         ),
                       );

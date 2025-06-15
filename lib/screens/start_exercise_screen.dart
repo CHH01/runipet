@@ -55,11 +55,27 @@ class _StartExerciseScreenState extends State<StartExerciseScreen> {
     return Consumer<ExerciseProvider>(
       builder: (context, exerciseProvider, child) {
         if (exerciseProvider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         if (exerciseProvider.error != null) {
-          return Center(child: Text('에러: ${exerciseProvider.error}'));
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('운동 기록을 불러오는데 실패했습니다: ${exerciseProvider.error}'),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => exerciseProvider.loadExerciseHistory(),
+                    child: Text('다시 시도'),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
         final lastExercise = exerciseProvider.exerciseHistory.isNotEmpty 
@@ -103,27 +119,9 @@ class _StartExerciseScreenState extends State<StartExerciseScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            Column(
-                              children: [
-                                Text('거리', style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 5),
-                                Text('${(lastExercise.distance / 1000).toStringAsFixed(1)} km'),
-                              ],
-                            ),
-                            Column(
-                              children: [
-                                Text('시간', style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 5),
-                                Text(formatDuration(Duration(seconds: lastExercise.duration))),
-                              ],
-                            ),
-                            Column(
-                              children: [
-                                Text('칼로리', style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 5),
-                                Text('${lastExercise.calories}'),
-                              ],
-                            ),
+                            _buildExerciseMetric('거리', '${(lastExercise.distance / 1000).toStringAsFixed(2)} km'),
+                            _buildExerciseMetric('시간', '${lastExercise.duration}분'),
+                            _buildExerciseMetric('칼로리', '${lastExercise.calories.toInt()} kcal'),
                           ],
                         ),
                       ] else ...[
@@ -155,6 +153,28 @@ class _StartExerciseScreenState extends State<StartExerciseScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildExerciseMetric(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey,
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }

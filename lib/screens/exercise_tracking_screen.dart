@@ -4,6 +4,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../providers/exercise_provider.dart';
+import '../providers/pitstop_provider.dart';
+import '../models/pitstop_data.dart';
 import 'exercise_summary_screen.dart';
 
 class ExerciseTrackingScreen extends StatefulWidget {
@@ -39,19 +41,30 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
   @override
   void initState() {
     super.initState();
-    _setMarkers();
+    _loadPitStop();
     _startTracking();
     _startExercise();
   }
 
+  Future<void> _loadPitStop() async {
+    await Provider.of<PitStopProvider>(context, listen: false).loadPitStop();
+    _setMarkers();
+  }
+
   void _setMarkers() {
-    _markers.add(
-      Marker(
-        markerId: MarkerId('sunmoon_gate'),
-        position: LatLng(36.802935, 127.069930),
-        infoWindow: InfoWindow(title: '선문대 서문'),
-      ),
-    );
+    final pitStop = Provider.of<PitStopProvider>(context, listen: false).pitStop;
+    if (pitStop != null) {
+      _markers.add(
+        Marker(
+          markerId: MarkerId('sunmoon_gate'),
+          position: LatLng(pitStop.latitude, pitStop.longitude),
+          infoWindow: InfoWindow(
+            title: pitStop.name,
+            snippet: pitStop.description,
+          ),
+        ),
+      );
+    }
   }
 
   void _startTracking() async {
@@ -93,29 +106,39 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
   }
 
   void _checkProximity(LatLng currentPosition) {
-    for (var marker in _markers) {
-      double distance = Geolocator.distanceBetween(
-        currentPosition.latitude,
-        currentPosition.longitude,
-        marker.position.latitude,
-        marker.position.longitude,
-      );
+    final pitStop = Provider.of<PitStopProvider>(context, listen: false).pitStop;
+    if (pitStop == null) return;
 
-      if (distance < 30) {
-        String markerId = marker.markerId.value;
-        String today = DateTime.now().toIso8601String().split('T').first;
+    double distance = Geolocator.distanceBetween(
+      currentPosition.latitude,
+      currentPosition.longitude,
+      pitStop.latitude,
+      pitStop.longitude,
+    );
 
-        if (_visitedMarkers[markerId] == today) {
-          _showAlreadyVisitedAlert();
-        } else {
-          _visitedMarkers[markerId] = today;
-          _showRewardPopup(marker.infoWindow.title ?? '이벤트 장소');
-        }
+    if (distance < 30) {
+      String today = DateTime.now().toIso8601String().split('T').first;
+      String markerId = 'sunmoon_gate';
+
+      if (_visitedMarkers[markerId] == today) {
+        _showAlreadyVisitedAlert();
+      } else {
+        _visitedMarkers[markerId] = today;
+        _claimPitStopReward();
       }
     }
   }
 
-  void _showRewardPopup(String title) {
+  Future<void> _claimPitStopReward() async {
+    try {
+      final result = await Provider.of<PitStopProvider>(context, listen: false).claimReward();
+      _showRewardPopup('선문대 서문', result['reward_value']);
+    } catch (e) {
+      _showErrorAlert(e.toString());
+    }
+  }
+
+  void _showRewardPopup(String title, String rewardValue) {
     showDialog(
       context: context,
       builder: (context) => Center(
@@ -133,7 +156,7 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                   textAlign: TextAlign.center),
               SizedBox(height: 12),
-              Text('+500xp 획득',
+              Text('+$rewardValue 획득',
                   style: TextStyle(fontSize: 16, color: Colors.white),
                   textAlign: TextAlign.center),
               SizedBox(height: 12),
@@ -141,7 +164,7 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
                 onPressed: () {
                   setState(() {
-                    _totalXp += 500;
+                    _totalXp += int.parse(rewardValue);
                   });
                   Navigator.of(context).pop();
                 },
@@ -150,6 +173,15 @@ class _ExerciseTrackingScreenState extends State<ExerciseTrackingScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showErrorAlert(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: 2),
       ),
     );
   }

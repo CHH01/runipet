@@ -1,34 +1,40 @@
 class ChallengeData {
-  final String id;
+  final int id;
   final String name;
   final String description;
   final String iconPath;
-  final int reward;
   final int current;
   final int goal;
   final bool completed;
+  final bool reward_claimed;
+  final String reward_type;
+  final int reward_value;
 
   ChallengeData({
     required this.id,
     required this.name,
     required this.description,
     required this.iconPath,
-    required this.reward,
     required this.current,
     required this.goal,
-    this.completed = false,
+    required this.completed,
+    required this.reward_claimed,
+    required this.reward_type,
+    required this.reward_value,
   });
 
   factory ChallengeData.fromJson(Map<String, dynamic> json) {
     return ChallengeData(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      iconPath: json['iconPath'] as String,
-      reward: json['reward'] as int,
-      current: json['current'] as int,
-      goal: json['goal'] as int,
-      completed: json['completed'] as bool? ?? false,
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+      iconPath: json['icon_path'],
+      current: json['current'],
+      goal: json['goal'],
+      completed: json['completed'],
+      reward_claimed: json['reward_claimed'],
+      reward_type: json['reward_type'],
+      reward_value: json['reward_value'],
     );
   }
 
@@ -37,33 +43,39 @@ class ChallengeData {
       'id': id,
       'name': name,
       'description': description,
-      'iconPath': iconPath,
-      'reward': reward,
+      'icon_path': iconPath,
       'current': current,
       'goal': goal,
       'completed': completed,
+      'reward_claimed': reward_claimed,
+      'reward_type': reward_type,
+      'reward_value': reward_value,
     };
   }
 
   ChallengeData copyWith({
-    String? id,
+    int? id,
     String? name,
     String? description,
     String? iconPath,
-    int? reward,
     int? current,
     int? goal,
     bool? completed,
+    bool? reward_claimed,
+    String? reward_type,
+    int? reward_value,
   }) {
     return ChallengeData(
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
       iconPath: iconPath ?? this.iconPath,
-      reward: reward ?? this.reward,
       current: current ?? this.current,
       goal: goal ?? this.goal,
       completed: completed ?? this.completed,
+      reward_claimed: reward_claimed ?? this.reward_claimed,
+      reward_type: reward_type ?? this.reward_type,
+      reward_value: reward_value ?? this.reward_value,
     );
   }
 } 

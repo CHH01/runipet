@@ -3,7 +3,8 @@ class InventoryItem {
   final String name;
   final String description;
   final String imagePath;
-  final Map<String, dynamic> effect;
+  final String effect;
+  final String category;
 
   InventoryItem({
     required this.id,
@@ -11,15 +12,17 @@ class InventoryItem {
     required this.description,
     required this.imagePath,
     required this.effect,
+    required this.category,
   });
 
   factory InventoryItem.fromJson(Map<String, dynamic> json) {
     return InventoryItem(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      imagePath: json['imagePath'] as String,
-      effect: json['effect'] as Map<String, dynamic>,
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+      imagePath: json['image_path'],
+      effect: json['effect'],
+      category: json['category'],
     );
   }
 
@@ -28,8 +31,9 @@ class InventoryItem {
       'id': id,
       'name': name,
       'description': description,
-      'imagePath': imagePath,
+      'image_path': imagePath,
       'effect': effect,
+      'category': category,
     };
   }
 } 
